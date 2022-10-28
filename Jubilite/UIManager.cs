@@ -10,6 +10,7 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 
+// A Enum that contains all the possible UI elements we may want to change
 public enum UIElement
 {
     Battery,
@@ -31,8 +32,10 @@ public enum UIElement
     
 }
 
+// This script uses events to change the UI that is loaded in an overlay UI scene
 public class UIManager : MonoBehaviour
 {
+    // Refrences for all of the UI that we are changing
     [Header("UI Elements")]
     [SerializeField] private Slider batteryPower, progressBar;
     [SerializeField] private TMP_Text statText, comboText, scoreText, breakText, countdownText, multiplierText;
@@ -43,6 +46,7 @@ public class UIManager : MonoBehaviour
     public static event OnPlayerDeath onPlayerDeath;
     public delegate void OnPlayerDeath();
     
+    // Subscribe all the change UI function to their delegate voids
     private void OnEnable()
     {
         StatsSystem.onUpdateSlider += ChangeSlider;
@@ -69,6 +73,7 @@ public class UIManager : MonoBehaviour
         batteryPower.value = batteryPower.maxValue;
     }
 
+    // Check the player health to tell if the play is dead or close to death
     void Update()
     {
         if (batteryPower.value < 25f)
@@ -85,11 +90,13 @@ public class UIManager : MonoBehaviour
         }
     }
 
+    // Invoke the player death event
     public static void InvokeOnPlayerDeath()
     {
         onPlayerDeath?.Invoke();
     }
 
+    // Disalble or enable the indicated UI element
     public void EnableDisableUI(UIElement UIToUpdate, bool change)
     {
         GetUIElement(UIToUpdate).SetActive(change);
@@ -108,10 +115,6 @@ public class UIManager : MonoBehaviour
                 {
                     batteryPower.value += (int)change * _modifier;
                 }
-                if (change < 0)
-                {
-                    
-                }
                 break;
             case UIElement.ProgressBar:
                 if (lerp)
@@ -128,16 +131,8 @@ public class UIManager : MonoBehaviour
         UpdateTextEvent(UIElement.PauseProgressText, "Completed: " + Mathf.RoundToInt(progressBar.value * 100f) + "%");
         UpdateTextEvent(UIElement.GameOverProgressText, "Completed: " + Mathf.RoundToInt(progressBar.value * 100f) + "%");
     }
-    IEnumerator MoveObject(Vector3 source, Vector3 target, float overTime)
-    {
-        float startTime = Time.time;
-        while(Time.time < startTime + overTime)
-        {
-            transform.position = Vector3.Lerp(source, target, (Time.time - startTime)/overTime);
-            yield return null;
-        }
-        transform.position = target;
-    }
+
+    // Smoothly Lerp the slider to the new position
     private IEnumerator LerpSlider(UIElement sliderToUpdate, float _initial, float _target)
     {
         float _curr = 0;
@@ -176,6 +171,7 @@ public class UIManager : MonoBehaviour
         GetUIElement(textToUpdate).GetComponent<TMP_Text>().text = name;
     }
 
+    // We use Vector 4 here so that we can set HDR colors and pass through emission
     public void UpdateColor(UIElement textToUpdate, Vector4 change)
     {
         if (textToUpdate == UIElement.Battery)
@@ -211,6 +207,8 @@ public class UIManager : MonoBehaviour
     {
         GameManager.ReloadScene();
     }
+
+    // returns the GameObject based on the UIElement that is passed through the event
     public GameObject GetUIElement(UIElement element)
     {
         switch (element)
