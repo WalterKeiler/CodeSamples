@@ -7,29 +7,37 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using Object = UnityEngine.Object;
 
+// Jubilite
+
+// This is the unity component of the custom editor
+// it does the backend work of saving the enmies and adding them to the spawner object
+
+// All code written by Walter Keiler 2022
+
 [RequireComponent(typeof(EnemySpawner))]
 [RequireComponent(typeof(HeatMap))]
 [ExecuteInEditMode]
 public class SpawnerGUI : MonoBehaviour
 {
+    // I only want this script to be running in editor
 #if UNITY_EDITOR
     public int beatNum = 1;
     public GameObject baseEnemyPrefab;
     public HeatMap heatMap;
     [HideInInspector]
     public List<Enemy> _enemies = new List<Enemy>();
-    [SerializeReference] private Enemy _currentEnemy;// = new Enemy();
+    [SerializeReference] private Enemy _currentEnemy;
     [Header("Enemy Options")]
     [SerializeField] private int repeatFrequency = 0;
     [SerializeField] private int stopRepeat = 0;
 
+    // Create a new enemy clearing the current enemy
     public void NewEnemy()
     {
         _currentEnemy = new Enemy();
-        //repeatFrequency = 0;
-        //stopRepeat = 0;
-        //_enemies.Add(currentEnemy);
     }
+    
+    // Move to the next beat and clear all of the data from the current enemy and beat
     public void NextBeat()
     {
         beatNum++;
@@ -37,6 +45,8 @@ public class SpawnerGUI : MonoBehaviour
         repeatFrequency = 0;
         stopRepeat = 0;
     }
+    
+    // Move to the next previous beat and clear all of the data from the current enemy and beat
     public void PreviousBeat()
     {
         beatNum--;
@@ -45,6 +55,7 @@ public class SpawnerGUI : MonoBehaviour
         stopRepeat = 0;
     }
 
+    // Create a enemy based on the data entered into the editor and add it into the list of enemies on this beat
     public void CreateEnemy(EnemiesToSpawn.SpawnPoints spawnPoint, List<EnemyMove> move)
     {
         _currentEnemy.spawnBeat = beatNum;
@@ -53,14 +64,12 @@ public class SpawnerGUI : MonoBehaviour
         _currentEnemy.spawnPoint = spawnPoint;
         
         _currentEnemy.enemyBehavior = ScriptableObject.CreateInstance<EnemyBehavior>();
-
-        //enemyBehavior.movementBehavior = new List<EnemyMove>();
+        
         _currentEnemy._enemyMoves = new List<EnemyMove>();
-        //_currentEnemy._enemyMoves.Add(new EnemyMove());
-        //_currentEnemy._enemyMoves[0].moveDir = Direction.Forward;
+
 #line hidden
         _currentEnemy.enemyBehavior.movementBehavior = _currentEnemy._enemyMoves;
-        //Debug.Log(move.Count);
+
         for (int i = 0; i < move.Count; i++)
         {
             _currentEnemy.enemyBehavior.movementBehavior.Add(move[i]);
@@ -69,6 +78,7 @@ public class SpawnerGUI : MonoBehaviour
         _enemies.Add(_currentEnemy);
     }
 
+    // Insert a new enemy into an already existing beat
     public void InsertEnemy(EnemiesToSpawn.SpawnPoints spawnPoint, List<EnemyMove> move, int i)
     {
         _currentEnemy = new Enemy();
@@ -78,11 +88,7 @@ public class SpawnerGUI : MonoBehaviour
         _currentEnemy.spawnPoint = spawnPoint;
         
         _currentEnemy.enemyBehavior = ScriptableObject.CreateInstance<EnemyBehavior>();
-
-        //enemyBehavior.movementBehavior = new List<EnemyMove>();
         _currentEnemy._enemyMoves = new List<EnemyMove>();
-        //_currentEnemy._enemyMoves.Add(new EnemyMove());
-        ///_currentEnemy._enemyMoves[0].moveDir = Direction.Forward;
 #line hidden
         _currentEnemy.enemyBehavior.movementBehavior = _currentEnemy._enemyMoves;
         
@@ -94,6 +100,7 @@ public class SpawnerGUI : MonoBehaviour
         _enemies[i] = _currentEnemy;
     }
     
+    // Create a beat that has all of the enemies for it and then save both the enemies and bet object to the project files
     public void CreateBeat()
     {
         heatMap = GetComponent<HeatMap>();
@@ -103,6 +110,7 @@ public class SpawnerGUI : MonoBehaviour
         SerializedObject so = new SerializedObject(beat);
         so.ApplyModifiedProperties();
         
+        // Check to see if the object already exists
         string folderPath = "Assets/ScriptableObjects/Beats/" + SceneManager.GetActiveScene().name;
         
         if (!Directory.Exists(folderPath))
@@ -120,6 +128,7 @@ public class SpawnerGUI : MonoBehaviour
         }
         else
         {
+            // If it already exists create another object with a copy indicator
             int copies = 1;
             for (int i = 0; i < copies; i++)
             {
@@ -139,7 +148,7 @@ public class SpawnerGUI : MonoBehaviour
         }
 
         List<EnemiesToSpawn> enemiesToSpawn = new List<EnemiesToSpawn>();
-
+        // Take all the enemies and create objects for all of them through the same object seen above
         int enemyNum = 0;
         foreach (var enemy in _enemies)
         {
@@ -201,6 +210,7 @@ public class SpawnerGUI : MonoBehaviour
         stopRepeat = 0;
     }
 
+    // Reste everything
     public void Reset()
     {
         beatNum = 1;
@@ -210,6 +220,7 @@ public class SpawnerGUI : MonoBehaviour
 #endif
 }
 
+// Holds all the enemy information
 [Serializable]
 public class Enemy
 {

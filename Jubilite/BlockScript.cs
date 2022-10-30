@@ -3,7 +3,11 @@ using System.Collections.Generic;
 using UnityEngine;
 using _Scripts.Systems;
 
+// Jubilite
+
 // This script drives the visual end of the HeatMap script changing a cube to visually represent the output of the map
+
+// All code written by Walter Keiler 2022
 public class BlockScript : MonoBehaviour
 {
     // What position on the board this cube is this correlates with the HeatMap output array

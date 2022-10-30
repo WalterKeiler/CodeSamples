@@ -4,9 +4,13 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using UnityEditor;
 using UnityEngine;
-//using Debug = System.Diagnostics.Debug;
-
 using Debug = UnityEngine.Debug;
+
+// Jubilite
+
+// This is the visual side of the custom editor using InspectorGUI for custom buttons and other UI elements
+
+// All code written by Walter Keiler 2022
 
 [CustomEditor(typeof(SpawnerGUI))]
 public class SpawnEditor : Editor
@@ -15,10 +19,7 @@ public class SpawnEditor : Editor
     int _repeatFrequency = 0;
     int _stopRepeatBeat = 0;
     bool _repeat = false;
-    //bool _stopRepeat = false;
     bool _firstEnemy = true;
-    //bool _savedEnemy = false;
-    bool _start = true;
 
     private int _spawnPoint = 1;
     private static Vector2 widthHeight = new Vector2(12, 8);
@@ -26,72 +27,44 @@ public class SpawnEditor : Editor
 
     private List<List<SavedEnemy>> savedEnemiesByBeat = new List<List<SavedEnemy>>();
     private List<SavedEnemy> savedEnemies = new List<SavedEnemy>();
-    
-    //Texture2D _board = new Texture2D(90, 50);
     List<Texture2D> _beatTextures = new List<Texture2D>();
-    private Texture2D _board;// = new Texture2D(90, 50);
-    private Texture2D _heatMap;// = new Texture2D(90, 50);
+    private Texture2D _board;
+    private Texture2D _heatMap;
 
     public override void OnInspectorGUI()
     {
         base.OnInspectorGUI();
         
         SpawnerGUI spawnerGUI = (SpawnerGUI)target;
-        if (_start)
-        {
-            //_heatMap = GetHeatMapTexture(spawnerGUI);
-            _start = false;
-        }
 
         spawnerGUI.beatNum = Mathf.Clamp(spawnerGUI.beatNum, 1, 10000);
         
         GUILayout.BeginHorizontal();
+        // Create a new enemy
         if (GUILayout.Button("New Enemy"))
         {
             NewEnemy(spawnerGUI);
         }
 
-        
-        // _repeat = GUILayout.Toggle(_repeat, "Repeat Frequency", GUILayout.Width(120));
-        // if (_repeat)
-        // {
-        //     _repeatFrequency = EditorGUI.IntField(new Rect(275, 104, 50, 20),_repeatFrequency);
-        //     GUILayout.Label("                     ");
-        //     
-        //     GUILayout.BeginHorizontal(GUILayout.Width(50));
-        //     GUILayout.Label("Stop Repeating");
-        //     
-        //     _stopRepeatBeat = EditorGUI.IntField(new Rect(350, 104, 50, 20),_stopRepeatBeat);
-        //     GUILayout.EndHorizontal();
-        // }
-        
-        else
-        {
-            _repeatFrequency = 0;
-            _stopRepeatBeat = 0;
-        }
-
         GUILayout.EndHorizontal();
         
         GUILayout.BeginHorizontal();
+        // Button to go back one beat and resets all of the current UI and enemy settings
         if (GUILayout.Button("Previous Beat"))
         {
-            //_savedEnemy = false;
             _firstEnemy = true;
             _repeatFrequency = 0;
             _spawnPoint = 1;
-            //_heatMap = GetHeatMapTexture(spawnerGUI);
             _toggle = new bool[(int)widthHeight.x, (int)widthHeight.y];
             NewEnemy(spawnerGUI);
             spawnerGUI.PreviousBeat();
         }
+        // Button to go forward one beat and resets all of the current UI and enemy settings
         if (GUILayout.Button("Next Beat"))
         {
-            //_savedEnemy = false;
             _firstEnemy = true;
             _repeatFrequency = 0;
             _spawnPoint = 1;
-            //_heatMap = GetHeatMapTexture(spawnerGUI);
             _toggle = new bool[(int)widthHeight.x, (int)widthHeight.y];
             NewEnemy(spawnerGUI);
             spawnerGUI.NextBeat();
@@ -101,15 +74,18 @@ public class SpawnEditor : Editor
         GUILayout.Space(10);
         GUILayout.Label("Enemy Path");
         
+        // Reset enemy path and the toggle grid for drawing the enemy path
         if (GUILayout.Button("Reset Enemy Path"))
         {
             _spawnPoint = 1;
             _toggle = new bool[(int)widthHeight.x, (int)widthHeight.y];
         }
         
+        // A custom function so I can change the size of the grid if I want to
         newToggleGrid((int)widthHeight.x, (int)widthHeight.y);
 
         GUILayout.BeginHorizontal();
+        // Save the enemy and sent all the current information and send it to SpawnerGUI 
         if (GUILayout.Button("Save Enemy"))
         {
             GetTexture(spawnerGUI);
@@ -122,31 +98,27 @@ public class SpawnEditor : Editor
             enemy._stopRepeatBeat = _stopRepeatBeat;
             enemy._board = _board;
             savedEnemies.Add(enemy);
-
-            //_toggle = new bool[(int)widthHeight.x, (int)widthHeight.y];
+            
             _repeat = false;
             NewEnemy(spawnerGUI);
-            //_savedEnemy = true;
         }
+        // Finish and save the beat
         if (GUILayout.Button("Save Beat"))
         {
             savedEnemiesByBeat.Add(savedEnemies);
             _firstEnemy = true;
-            //_savedEnemy = false;
             spawnerGUI.CreateBeat();
-            //_heatMap = GetHeatMapTexture(spawnerGUI);
         }
         GUILayout.EndHorizontal();
         
         GUILayout.Space(10);
         
         GUILayout.BeginHorizontal();
+        // If you have already created a enemy on this beat you can over
         if (savedEnemies.Count > 0 && savedEnemies.Count > spawnerGUI.beatNum && savedEnemies[spawnerGUI.beatNum - 1] != null)
         {
-            ////Debug.Log(savedEnemies.Count);
             for (int i = 0; i < savedEnemies.Count; i++)
             {
-                ////Debug.Log(i);
                 GUILayout.BeginVertical();
                 if (GUILayout.Button(i.ToString()))
                 {
@@ -183,18 +155,19 @@ public class SpawnEditor : Editor
         
         GUILayout.BeginHorizontal();
         
-        //if (_beatTextures.Count > 0 && _beatTextures.Count > spawnerGUI.beatNum - 1 && _beatTextures[spawnerGUI.beatNum - 1] != null)
+        // Show the heat map for the beat you are currently on
         if(spawnerGUI.heatMap != null)
         {
             _heatMap = GetHeatMapTexture(spawnerGUI);
             GUILayout.Box(_heatMap);
         }
+        // Show the other enemies on the beat and their path
         if (_beatTextures.Count > 0 && _beatTextures.Count > spawnerGUI.beatNum - 1 && _beatTextures[spawnerGUI.beatNum - 1] != null)
-        //if(_beatTextures[spawnerGUI.beatNum - 1] != null && _beatTextures.Count > 0 && _beatTextures.Count > spawnerGUI.beatNum - 1 )
             GUILayout.Box(_beatTextures[spawnerGUI.beatNum - 1]);
         GUILayout.EndHorizontal();
     }
 
+    // Reset everything and prepare for a new enemy
     void NewEnemy(SpawnerGUI spawnerGUI)
     {
         if (_firstEnemy)
@@ -208,9 +181,9 @@ public class SpawnEditor : Editor
         _toggle = new bool[(int)widthHeight.x, (int)widthHeight.y];
     }
     
+    // This function creates a grid that is an arbitrary size of GUI toggles 
     public void newToggleGrid(int width, int height)
     {
-        //toggle = bool[width, height];
         _spawnPoint = 1;
         int y = 0;
         while (y < height - 1)
@@ -255,7 +228,8 @@ public class SpawnEditor : Editor
             GUILayout.EndHorizontal();
         }
     }
-
+    
+    // This function takes a toggle and translates that to the correlating spawn point
     public EnemiesToSpawn.SpawnPoints GetSpawnPoint()
     {
         EnemiesToSpawn.SpawnPoints spawnPoint = EnemiesToSpawn.SpawnPoints.Spawnpoint1;
@@ -379,6 +353,7 @@ public class SpawnEditor : Editor
         return spawnPoint;
     }
 
+    // This function sets the inital direction of the enemy
     public List<EnemyMove> GetDirection(EnemiesToSpawn.SpawnPoints spawnPoint)
     {
         bool turned = false;
@@ -389,7 +364,6 @@ public class SpawnEditor : Editor
 
         switch (spawnPoint)
         {
-            ////Debug.Log(spawnPoint);
             case EnemiesToSpawn.SpawnPoints.Spawnpoint1:
             case EnemiesToSpawn.SpawnPoints.Spawnpoint2:
             case EnemiesToSpawn.SpawnPoints.Spawnpoint3:
@@ -404,8 +378,6 @@ public class SpawnEditor : Editor
                 {
                     if(_toggle[x,1])
                     {
-                        //Debug.Log(x);
-                        //moveNum++;
                         move.moveDir = Direction.Forward;
                         move.moves = 0;
                         turned = true;
@@ -413,9 +385,6 @@ public class SpawnEditor : Editor
                         moves.Add(move);
                         Vector2 pos = new Vector2(x, 1);
                         GetTurns(moves, dir, turned, pos, moveNum);
-                        
-                        //Debug.Log("Moves " + moves.Count);
-                        
                         return moves;
                     }
                 }
@@ -435,8 +404,6 @@ public class SpawnEditor : Editor
                 {
                     if(_toggle[x,7])
                     {
-                        //Debug.Log(x);
-                        //moveNum++;
                         move.moveDir = Direction.Forward;
                         move.moves = 0;
                         turned = true;
@@ -444,9 +411,7 @@ public class SpawnEditor : Editor
                         moves.Add(move);
                         Vector2 pos = new Vector2(x, 7);
                         GetTurns(moves, dir, turned, pos, moveNum);
-                        
-                        //Debug.Log("Moves " + moves.Count);
-                        
+
                         return moves;
                     }
                 }
@@ -463,8 +428,6 @@ public class SpawnEditor : Editor
                 {
                     if(_toggle[11,y])
                     {
-                        //Debug.Log(y);
-                        //moveNum++;
                         move.moveDir = Direction.Forward;
                         move.moves = 0;
                         turned = true;
@@ -472,9 +435,7 @@ public class SpawnEditor : Editor
                         moves.Add(move);
                         Vector2 pos = new Vector2(11, y);
                         GetTurns(moves, dir, turned, pos, moveNum);
-                        
-                        //Debug.Log("Moves " + moves.Count);
-                        
+
                         return moves;
                     }
                 }
@@ -491,8 +452,6 @@ public class SpawnEditor : Editor
                 {
                     if (_toggle[1, y])
                     {
-                        //Debug.Log(y);
-                        ////moveNum++;
                         move.moveDir = Direction.Forward;
                         move.moves = 0;
                         turned = true;
@@ -500,9 +459,7 @@ public class SpawnEditor : Editor
                         moves.Add(move);
                         Vector2 pos = new Vector2(1, y);
                         GetTurns(moves, dir, turned, pos, moveNum);
-                        
-                        //Debug.Log("Moves " + moves.Count);
-                        
+
                         return moves;
                     }
                 }
@@ -514,37 +471,30 @@ public class SpawnEditor : Editor
         return moves;
     }
 
+    // This function checks to see what turns the enemy makes and adds them to the enemy behavior
     public void GetTurns(List<EnemyMove> moves, Vector2 dir, bool turned, Vector2 pos, int moveNum)
     {
-        //Debug.Log("Get Turns");
         bool[,] tempGrid = _toggle;
         int extraMoves = 1;
         for (int i = 0; i < extraMoves; i++)
         {
-            ////Debug.Log("Turn Num: " + i);
             EnemyMove move = new EnemyMove();
-            ////Debug.Log("Dir: " + dir);
-            //Debug.Log("Pos: " + pos);
-            
+
             moveNum++;
             
             switch (turned)
             {
                 case true when dir == Vector2.up:
                 {
-                    //Debug.Log("Up");
                     if(tempGrid[(int) pos.x, (int) pos.y - 1])
                     {
                         tempGrid[(int) pos.x, (int) pos.y - 1] = false;
                         pos = new Vector2((int) pos.x, (int) pos.y - 1);
-                        //dir = Vector2.up;
-                        //Debug.Log("Forward");
                         extraMoves++;
                     }
                     else if(tempGrid[(int) pos.x - 1, (int) pos.y])
                     {
                         tempGrid[(int) pos.x - 1, (int) pos.y] = false;
-                        ////Debug.Log("Left " + new Vector2((int) pos.x - 1, (int) pos.y - 1));
                         extraMoves++;
                         pos = new Vector2((int) pos.x - 1, (int) pos.y);
                         
@@ -561,10 +511,8 @@ public class SpawnEditor : Editor
                         tempGrid[(int) pos.x + 1, (int) pos.y] = false;
                         extraMoves++;
                         pos = new Vector2((int) pos.x + 1, (int) pos.y);
-                        ////Debug.Log("Right");
                         move.moveDir = Direction.Right;
-                        //move.moveDir = Direction.Left;
-                        
+
                         move.moves = moveNum;
 
                         dir = Vector2.right;
@@ -574,7 +522,6 @@ public class SpawnEditor : Editor
                     else
                     {
                         i++;
-                        //Debug.Log("End");
                         break;
                     }
                     break;
@@ -582,13 +529,11 @@ public class SpawnEditor : Editor
                 //-----------------------------------------------------------------------------
                 case true when dir == Vector2.down:
                 {
-                    //Debug.Log("Down");
                     if(tempGrid[(int) pos.x, (int) pos.y + 1])
                     {
                         tempGrid[(int) pos.x, (int) pos.y + 1] = false;
                         pos = new Vector2((int) pos.x, (int) pos.y + 1);
-                        
-                        //Debug.Log("Forward");
+
                         extraMoves++;
                     }
                     else if(tempGrid[(int) pos.x - 1, (int) pos.y])
@@ -622,7 +567,6 @@ public class SpawnEditor : Editor
                     else
                     {
                         i++;
-                        //Debug.Log("End");
                         break;
                     }
                     break;
@@ -630,13 +574,11 @@ public class SpawnEditor : Editor
                 //-----------------------------------------------------------------------------
                 case true when dir == Vector2.left:
                 {
-                    //Debug.Log("Left");
                     if(tempGrid[(int) pos.x - 1, (int) pos.y])
                     {
                         tempGrid[(int) pos.x - 1, (int) pos.y] = false;
                         pos = new Vector2((int) pos.x - 1, (int) pos.y);
-                        
-                        //Debug.Log("Forward");
+
                         extraMoves++;
                     }
                     else if(tempGrid[(int) pos.x, (int) pos.y - 1])
@@ -670,7 +612,6 @@ public class SpawnEditor : Editor
                     else
                     {
                         i++;
-                        //Debug.Log("End");
                         break;
                     }
                     break;
@@ -678,13 +619,11 @@ public class SpawnEditor : Editor
                 //-----------------------------------------------------------------------------
                 case true when dir == Vector2.right:
                 {
-                    //Debug.Log("Right");
                     if(tempGrid[(int) pos.x + 1, (int) pos.y])
                     {
                         tempGrid[(int) pos.x + 1, (int) pos.y] = false;
                         pos = new Vector2((int) pos.x + 1, (int) pos.y);
-                        
-                        //Debug.Log("Forward");
+
                         extraMoves++;
                     }
                     else if(tempGrid[(int) pos.x, (int) pos.y + 1])
@@ -718,7 +657,6 @@ public class SpawnEditor : Editor
                     else
                     {
                         i++;
-                        //Debug.Log("End");
                         break;
                     }
                     break;
@@ -727,6 +665,7 @@ public class SpawnEditor : Editor
         }
     }
     
+    // Get the Heatmap and set the texture to it
     public Texture2D GetHeatMapTexture(SpawnerGUI spawnerGUI)
     {
         Texture2D map = new Texture2D(90, 50);
@@ -741,13 +680,13 @@ public class SpawnEditor : Editor
                         spawnerGUI.heatMap.heatMaps[spawnerGUI.beatNum].heatMapOutput[(x / 10), (y / 10)].b,
                         0,
                         1));
-                //map.SetPixel(x,y,heatMap.GetPixel((x / 10), (y / 10)));
             }
         }
         map.Apply();
         return map;
     }
     
+    // Get a previous enemy path texture
     public void GetTexture(SpawnerGUI spawnerGUI)
     {
         if(spawnerGUI.beatNum > _beatTextures.Count)
@@ -762,7 +701,6 @@ public class SpawnEditor : Editor
         {
             for (int y = 0; y < _board.height; y++)
             {
-                //board.SetPixel(x,y, Color.black);
                 if (_toggle[(x / 10) + 2, (y / 10) + 2])
                 {
                     _board.SetPixel(x,-y - 1,Color.red);
@@ -770,8 +708,7 @@ public class SpawnEditor : Editor
             }
         }
         _board.Apply();
-
-        ////Debug.Log(_beatTextures.Count);
+        
         _beatTextures[spawnerGUI.beatNum - 1] = _board;
     }
     
@@ -781,14 +718,13 @@ public class SpawnEditor : Editor
         _beatTextures = new List<Texture2D>();
     }
 
+    // Reset all script data
     public void Reset()
     {
         _repeatFrequency = 0;
         _stopRepeatBeat = 0;
         _repeat = false;
-        //_stopRepeat = false;
         _firstEnemy = true;
-        //_savedEnemy = false;
 
         _spawnPoint = 1;
         widthHeight = new Vector2(12, 8);

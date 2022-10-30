@@ -10,6 +10,13 @@ using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 using UnityEngine.Rendering;
 
+// Jubilite
+
+// This script uses events to change the UI that is loaded in an overlay UI scene
+// and is responsible for all of the game HUD
+
+// All code written by Walter Keiler 2022
+
 // A Enum that contains all the possible UI elements we may want to change
 public enum UIElement
 {
@@ -32,7 +39,6 @@ public enum UIElement
     
 }
 
-// This script uses events to change the UI that is loaded in an overlay UI scene
 public class UIManager : MonoBehaviour
 {
     // Refrences for all of the UI that we are changing

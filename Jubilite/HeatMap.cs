@@ -5,7 +5,11 @@ using System.IO;
 using _Scripts.Systems;
 using UnityEngine;
 
+// Jubilite
+
 // This script creates a heat map that shows the player where the enemy is going to move on the upcoming beats
+
+// All code written by Walter Keiler 2022
 public class HeatMap : MonoBehaviour
 {
     [SerializeField] private EnemySpawner enemySpawner;

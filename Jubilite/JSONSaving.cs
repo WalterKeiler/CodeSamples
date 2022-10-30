@@ -6,15 +6,24 @@ using System.IO;
 using UnityEditor;
 using UnityEngine.SceneManagement;
 
+// Jubilite
+
+// This is the backend for the saving and loading system responsible for reading and writing from the JSON
+
+// All code written by Walter Keiler 2022
+
 public class JSONSaving : MonoBehaviour
 {
     public static PlayerData _playerData;
 
+    // Unity Path
     public static string path = "";
+    // Build Path
     public static string persitentPath = "";
 
     private static JSONSaving _jsonSaving;
 
+    // Make this not destory on load
     private void Awake()
     {
         if (_jsonSaving)
@@ -28,6 +37,7 @@ public class JSONSaving : MonoBehaviour
         }
     }
 
+    // Check to see if our save data exists if not create it then load our saved data
     void Start()
     {
         SetPaths();
@@ -51,21 +61,7 @@ public class JSONSaving : MonoBehaviour
         }
     }
 
-    private void Update()
-    {
-        if (Input.GetKeyDown(KeyCode.P))
-        {
-            //SaveLoadManager.SaveData(SceneManager.GetActiveScene().buildIndex, "Test");
-            //SaveData(_playerData);
-        }
-
-        if (Input.GetKeyDown(KeyCode.L))
-        {
-            Debug.Log(SaveLoadManager.LoadData().ToString());
-            //LoadData();
-        }
-    }
-
+    // Create player data with default values
     public static void CreatePlayerData()
     {
         List<Level> newLevel = new List<Level>();
@@ -74,9 +70,9 @@ public class JSONSaving : MonoBehaviour
         _playerData = new PlayerData(new PlayerSettings(),"Dev", newLevel, true, 0);
     }
 
+    // Set the path depending on if we are in editor or in build
     public static void SetPaths()
     {
-        //Debug.Log("Set Path");
 #if UNITY_EDITOR
         path = Application.dataPath + Path.AltDirectorySeparatorChar + "SaveData.json";
 #else
@@ -84,6 +80,7 @@ public class JSONSaving : MonoBehaviour
 #endif
     }
 
+    // This function writes the player data to the JSON file
     public static void SaveData(PlayerData _newData)
     {
 #if UNITY_EDITOR
@@ -101,6 +98,7 @@ public class JSONSaving : MonoBehaviour
         writer.Write(json);
     }
 
+    // This function reads from the JSON and sets player data equal to those values
     public static void LoadData()
     {
 #if UNITY_EDITOR
@@ -137,7 +135,7 @@ public class JSONSaving : MonoBehaviour
         Debug.Log((data.ToString()));
 #endif
     }
-
+    
     public static void DeleteData()
     {
         Debug.Log("Delete Save Data");

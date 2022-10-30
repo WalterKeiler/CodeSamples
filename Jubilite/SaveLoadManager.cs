@@ -6,10 +6,18 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.Audio;
 
+// Jubilite
+
+// This is the Manager that is used to interface with the JSONSaving script and is called throughout the game
+
+// All code written by Walter Keiler 2022
+
 public class SaveLoadManager : MonoBehaviour
 {
     public static PlayerData _playerData;
     public AudioMixer master;
+    
+    // Make sure all the player settings are loaded in and set
     public void Start()
     {
         _playerData = new PlayerData(new PlayerSettings(),"", new List<Level>(), true, 0);
@@ -24,6 +32,7 @@ public class SaveLoadManager : MonoBehaviour
         QualitySettings.SetQualityLevel(_playerData.settings.quality);
     }
     
+    // This is the master save function for saving level and player data
     public static void SaveData(int levelID = -1, int score = -1, int stars = 0, bool newSave = true, string name = "")
     {
         if (JSONSaving.path == null || JSONSaving.persitentPath == null)
@@ -55,6 +64,7 @@ public class SaveLoadManager : MonoBehaviour
             _playerData.name = name;
         }
 
+        // Check to see if the player has already completed this level
         if (levelID >= 0)
         {
             Level newLevel = new Level(levelID, new List<int>(), stars);
@@ -77,6 +87,7 @@ public class SaveLoadManager : MonoBehaviour
                 }
             }
             
+            // If the player has not previously completed this level write all of its data in
             if (!_playerData.completedLevels.Contains(newLevel))
             {
                 newLevel.scores.Add(score);
@@ -92,6 +103,7 @@ public class SaveLoadManager : MonoBehaviour
         JSONSaving.SaveData(_playerData);
     }
 
+    // This is a save function specific to game settings
     public static void SaveSettings(float volumeMusic = 0, float volumeSFX = 0, bool dPad = false, bool screenShake = true, int quality = 0)
     {
         if (JSONSaving.path == null || JSONSaving.persitentPath == null)
@@ -139,6 +151,7 @@ public class SaveLoadManager : MonoBehaviour
     }
 }
 
+// This is the player data class that holds all of the important things we need to keep track of about the player
 public class PlayerData
 {
     public PlayerSettings settings;
@@ -162,6 +175,7 @@ public class PlayerData
     }
 }
 
+// Holds all the data pertaining to a level
 [System.Serializable]
 public class Level
 {
@@ -182,6 +196,7 @@ public class Level
     }
 }
 
+// Holds all of the game settings
 [Serializable]
 public class PlayerSettings
 {
