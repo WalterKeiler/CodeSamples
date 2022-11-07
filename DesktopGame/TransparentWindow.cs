@@ -5,8 +5,15 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// Desktop Breakout
+
+// This script controls how the application is rendered and if you can click through it or not
+
+// All code written by Walter Keiler 2022
+
 public class TransparentWindow : MonoBehaviour
 {
+    // Holds everything necessary to interface with windows and the render layers
     #region Window Vars
     [DllImport("user32.dll")]
     public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
@@ -49,9 +56,10 @@ public class TransparentWindow : MonoBehaviour
     #endregion
 
     [SerializeField] private LayerMask clickableMask;
+    
+    // Find the application and set it to render over all other applications
     private void Start()
     {
-        //MessageBox(new IntPtr(0), "Hello", "pass", 0);
 #if !UNITY_EDITOR
         hWnd = FindWindow(null,"FunnyDesktopThing");
         
@@ -59,16 +67,15 @@ public class TransparentWindow : MonoBehaviour
         DwmExtendFrameIntoClientArea(hWnd, ref margins);
         
         SetWindowLong(hWnd, GWL_EXSTYLE, WS_EX_LAYERED | WS_EX_TRANSPARENT);
-        //SetLayeredWindowAttributes(hWnd, 0, 0, LWA_COLORKEY);
 
         SetWindowPos(hWnd, HWND_TOPMOST, 0, 0, 0, 0, 0);
 #endif
     }
 
+    // Check to see if you are allowed to click through this object
     private void Update()
     {
         SetClickThrough(Physics2D.OverlapPoint(Camera.main.ScreenToWorldPoint(Input.mousePosition),clickableMask) == null && !EventSystem.current.IsPointerOverGameObject());
-        //SetClickThrough(EventSystem.current.IsPointerOverGameObject());
     }
 
     private void SetClickThrough(bool clickThrough)

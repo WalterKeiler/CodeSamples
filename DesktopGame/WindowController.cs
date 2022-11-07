@@ -7,6 +7,12 @@ using System.Diagnostics;
 using System.Text;
 using Debug = UnityEngine.Debug;
 
+// Desktop Breakout
+
+// This script controls how the application is rendered and if you can click through it or not
+
+// All code written by Walter Keiler 2022
+
 public class WindowController : MonoBehaviour
 {
     [SerializeField] private GameObject gameObj;
@@ -17,7 +23,8 @@ public class WindowController : MonoBehaviour
     private System.Diagnostics.Process player;
     private IntPtr playerHandle;
     private IntPtr zPos;
-
+    
+    // Holds all of the relevant windows variables 
     #region DllImport
 
     [DllImport("User32.dll")]
@@ -67,6 +74,7 @@ public class WindowController : MonoBehaviour
     // Simple two state toggle
     bool toggle = true;
 
+    // Create the notepad and name it
     private void Start()
     {
         player = new System.Diagnostics.Process();
@@ -76,18 +84,16 @@ public class WindowController : MonoBehaviour
         playerHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, "Player.txt - Notepad");
     }
 
+    // This moves the player window to follow the mouse and moves the notepad
     void Update () 
     {
         playerHandle = IntPtr.Zero;
         playerHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, "Player.txt - Notepad");
         Vector2 targetPos = ConvertWorldToPixel(startPos);
-        //Debug.Log(player.Id);
-        
+
         SetWindowPos(playerHandle, IntPtr.Zero, (int) Input.mousePosition.x - 100, (int) targetPos.y, width, height,
             SWP_NOACTIVATE);
-
-        //IntPtr handle = FindWindow(null, "Sticky Notes");
-        //IntPtr handle = FindWindow(null, "Untitled - Notepad");
+        
         IntPtr handle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, "Player.txt - Notepad");
         RECT pos = new RECT();
         GetWindowRect(handle, out pos);

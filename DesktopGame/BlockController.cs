@@ -4,6 +4,12 @@ using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
 
+// Desktop Breakout
+
+// This script controls the notepad windows and closes and resizes them
+
+// All code written by Walter Keiler 2022
+
 public class BlockController : MonoBehaviour
 {
     [SerializeField] private GameObject gameObj;
@@ -17,6 +23,7 @@ public class BlockController : MonoBehaviour
     private System.Diagnostics.Process player;
     private IntPtr playerHandle;
 
+    // This region holds all of the windows and application related variables
     #region DllImport
 
     [DllImport("User32.dll")]
@@ -72,6 +79,7 @@ public class BlockController : MonoBehaviour
     // Simple two state toggle
     public bool hit = false;
 
+    // This function opens an instance of notepad and names it and sets the handle of the window
     private void Start()
     {
         player = new System.Diagnostics.Process();
@@ -79,16 +87,15 @@ public class BlockController : MonoBehaviour
         player.EnableRaisingEvents = true;
         player.Start();
         playerHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, num.ToString() + ".txt - Notepad");
-        //Debug.Log(GetWindowLongPtr(playerHandle,GWL.GWL_HINSTANCE));
     }
 
+    // Here we set the position of the notepad and check to see if this block has been hit
     void Update () 
     {
         playerHandle = IntPtr.Zero;
         playerHandle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, num.ToString() + ".txt - Notepad");
         Vector2 targetPos = ConvertWorldToPixel(startPos);
-        //Debug.Log(player.Id);
-        
+
         SetWindowPos(playerHandle, IntPtr.Zero, (int) targetPos.x, (int) targetPos.y, width, height,
             SWP_NOACTIVATE);
 
@@ -100,8 +107,6 @@ public class BlockController : MonoBehaviour
             xObj.SetActive(false);
         }
         
-        //IntPtr handle = FindWindow(null, "Sticky Notes");
-        //IntPtr handle = FindWindow(null, "Untitled - Notepad");
         IntPtr handle = FindWindowEx(IntPtr.Zero, IntPtr.Zero, null, num.ToString() + ".txt - Notepad");
         RECT pos = new RECT();
         GetWindowRect(handle, out pos);
