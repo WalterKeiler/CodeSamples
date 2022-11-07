@@ -5,8 +5,15 @@ using System.Runtime.InteropServices;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
+// Wallpaper Engine
+
+// This script sets a build to render behind the files on the desktop and applications but ahead of the actual desktop wallpaper
+
+// All code written by Walter Keiler 2022
+
 public class Wallpaper : MonoBehaviour
 {
+    // This region holds everything needed to interface with windows and render a window
     #region Window Vars
     [DllImport("user32.dll")]
     public static extern int MessageBox(IntPtr hWnd, string text, string caption, uint type);
@@ -82,18 +89,19 @@ public class Wallpaper : MonoBehaviour
     #endregion
 
     [SerializeField] private LayerMask clickableMask;
+    
+    // When the application starts set it to render on the propper layer
     private void Start()
     {
-        //MessageBox(new IntPtr(0), "Hello", "pass", 0);
 #if !UNITY_EDITOR
         hWnd = GetActiveWindow();
         
         Margins margins = new Margins {cxLeftWidth = -1};
         DwmExtendFrameIntoClientArea(hWnd, ref margins);
 
-        IntPtr progman = FindWindow("Progman", false);
+        IntPtr program = FindWindow("Progman", false);
         IntPtr result = IntPtr.Zero;
-        SendMessageTimeout(progman, 
+        SendMessageTimeout(program, 
             0x052C, 
             new IntPtr(0), 
             IntPtr.Zero, 
@@ -126,12 +134,7 @@ public class Wallpaper : MonoBehaviour
 #endif
     }
 
-    private void Update()
-    {
-        //SetClickThrough(Physics2D.OverlapPoint(Camera.main.ScreenToWorldPoint(Input.mousePosition)) == null && !EventSystem.current.IsPointerOverGameObject());
-        //SetClickThrough(EventSystem.current.IsPointerOverGameObject());
-    }
-
+    // This function is for if you want to set certain things to be clickable 
     private void SetClickThrough(bool clickThrough)
     {
         if (clickThrough)
