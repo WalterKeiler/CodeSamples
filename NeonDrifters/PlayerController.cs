@@ -9,6 +9,13 @@ using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
 
+// Neon Driftersprivate
+
+// This script contains the player interaction and Photon implementation for the player
+
+// All code written by Walter Keiler 2022
+
+// I likely did not need to use inheritance for this system but it seems to work out fairly well
 public class PlayerController : MovementLogic
 {
 
@@ -39,6 +46,8 @@ public class PlayerController : MovementLogic
 
     private float fallTimer = 3;
     float timer = 0; 
+    
+    // Set all the inital refrences and UI if this is the local player
     public void Awake()
     {
         if (photonView.IsMine)
@@ -48,21 +57,16 @@ public class PlayerController : MovementLogic
             playerUIActive = Instantiate(playerUIPrefab, transform.position, Quaternion.identity, null);
             speedMeter = playerUIActive.GetComponentsInChildren<Image>()[2];
             speedText = playerUIActive.GetComponentInChildren<TMP_Text>();
-            //RaceManager.Instance.StartScoreBoard(playerUIActive);
-            //rbIn = GetComponent<Rigidbody>();
         }
         DontDestroyOnLoad(this.gameObject);
     }
 
+    // Set a few more refrences
     public void Start()
     {
         
         if (photonView.IsMine)
         {
-            photonView.RPC("RPC_UpdatePlayers", RpcTarget.AllBuffered);
-            
-            
-            
             CameraController cam = cameraActive.GetComponentInChildren<CameraController>();
             if (cam != null)
             {
@@ -73,6 +77,7 @@ public class PlayerController : MovementLogic
 
     }
 
+    // Do the basic movement logic 
     public void FixedUpdate()
     {
         if (photonView.IsMine == false && PhotonNetwork.IsConnected == true)
@@ -92,10 +97,10 @@ public class PlayerController : MovementLogic
 
     }
 
+    // Get player input and update UI elements
     public void Update()
     {
-
-
+        
         if (photonView.IsMine)
         {
             inputs = GetInput();
@@ -104,7 +109,7 @@ public class PlayerController : MovementLogic
             {
                 speedLocal = rb.velocity.magnitude;
             }
-            //float lerp = Mathf.c
+
             speedMeter.fillAmount = Mathf.LerpUnclamped(0f, .25f, speedLocal/110);
             speedMeter.color = Color.Lerp(Color.green, Color.red, speedLocal/120);
             speedText.text = Mathf.RoundToInt(speedLocal).ToString();
@@ -127,9 +132,10 @@ public class PlayerController : MovementLogic
         }
     }
 
+    // Logic for updating checkpoints and future scoreboard
     private void OnTriggerEnter(Collider other)
     {
-        if (other.gameObject.layer == 8)// && other.name != mostRecentCheckpoint.name)
+        if (other.gameObject.layer == 8)
         {
             mostRecentCheckpoint = other.transform;
             numberOfCheckpointsPassed++;
@@ -140,14 +146,6 @@ public class PlayerController : MovementLogic
     [PunRPC]
     void RPC_UpdateScoreboard(string name, int playerCheckpointNum)
     {
-        //RaceManager.Instance.UpdateScoreBoard(name, playerCheckpointNum);
-    }
-    
-    [PunRPC]
-    void RPC_UpdatePlayers()
-    {
-        //GameObject player = this.gameObject;
-        //RaceManager.Instance.players.Clear();
-        //RaceManager.Instance.UpdatePlayers(player);
+        // Future scoreboard implementation
     }
 }
