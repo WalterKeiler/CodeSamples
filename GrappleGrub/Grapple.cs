@@ -86,7 +86,7 @@ public class Grapple : MonoBehaviour
     {
         if(Cursor.lockState == CursorLockMode.None) return;
 
-        Input();
+        InputLogic();
 
         GrappleLogic();
         
@@ -99,7 +99,7 @@ public class Grapple : MonoBehaviour
     }
 
     // Get all input and if you have a valid grapple target grapple to it
-    void Input()
+    void InputLogic()
     {
         if (((Input.GetKeyDown(swingGrappleKey) && !Input.GetKey(pullGrappleKey)) ||
              (Input.GetKeyDown(pullGrappleKey) && !Input.GetKey(swingGrappleKey))) && !connect)
