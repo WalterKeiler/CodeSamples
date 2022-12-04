@@ -7,143 +7,194 @@ using UnityEngine.UI;
 using TMPro;
 using Unity.Mathematics;
 
+// Grapple Grub
+
+// This script holds all the player movement and related logic
+
+// All code written by Walter Keiler 2022
+
 public class PlayerMovement : MonoBehaviour
 {
-   [Header("Generic Variables")]
-   public Transform playerCam;
-   public Transform orientation;
+    
+#region Misc Vars
 
-   public Rigidbody rb;
-   //rotation and Camera
-   float xRot;
-   float sensitivity = 50f;
-   float sensMult = 1f;
+    [Header("Generic Variables")]
+    public Transform playerCam;
+    public Transform orientation;
 
-   //move
-   [Header("Movement Variables")]
-   public float currentSpeed;
-   public TMP_Text speed;
-   [Tooltip("How fast the character accelerates")]
-   public float moveSpeed = 4500;
-   public float maxGroundSpeed = 20;
-   public float maxSpeed = 45;
-   public bool isNormalized = true;
-   [Range(0,1),Tooltip("Percent of movement control you get in the air")]
-   public float airMovementMultiplier;
-   public float gravity = 10;
-   [Tooltip("Used for downward velocity when jumping")]
-   public float gravityMultiplier = 1;
-   public bool grounded;
-   public LayerMask ground;
-   [Range(0,1),Tooltip("How fast the character slows down while grounded")]
-   public float counterMove = .175f;
-   public float airBreakForce = .175f;
-   float threshold = .01f;
-   public float maxSlopeAngle = 35f;
-   Vector2 mag;
-   public float stepSpeed = 0.2f;
-   private float stepTimer;
+    public Rigidbody rb;
+    
+    //rotation and Camera
+    float xRot;
+    float sensitivity = 50f;
+    float sensMult = 1f;
+    
+    //input
+    float x, y;
+    private Vector3 inputVector;
+    bool jumping, sliding;
+    public bool dash;
+    
+    Grapple grapple;
+    float timer;
 
-   //jump
-   [Header("Jump Variables")]
-   bool rdyToJump = true;
-   float jumpCooldown = .25f;
-   public float jumpForce = 550f;
+    public bool debugUI = false;
 
+    //Particles
+    public ParticleSystem particle;
 
-   //input
-   float x, y;
-   private Vector3 inputVector;
-   bool jumping, sliding; //add slide+ here
-   public bool dash;
+#endregion
 
-   //Slide
-   [Header("Slide Variables")]
-   public float startSlideSpeedThreshold;
-   public float stopSlideSpeedThreshold;
-   [Range(0,1)]
-   public float slideDrag;
-   public float maxSlideSpeed;
-   public float slideHeight;
-   public float slideJumpMultiplier;
-   public float slidingGravity;
-   public float slidingStrafeClamp;
+#region Movement Variables
 
-   [SerializeField] private LayerMask stopSlide;
-   [SerializeField] Transform slideCheck;
-   public bool isSliding;
-  
-   private CapsuleCollider PlayerCol;
-   private float startCounterMove, startHeight, startMaxSpeed;
-   Vector3 normalVector = Vector3.up;
+    //move
+    [Header("Movement Variables")]
+    public float currentSpeed;
+    public TMP_Text speed;
+    [Tooltip("How fast the character accelerates")]
+    public float moveSpeed = 4500;
+    public float maxGroundSpeed = 20;
+    public float maxSpeed = 45;
+    public bool isNormalized = true;
+    [Range(0,1),Tooltip("Percent of movement control you get in the air")]
+    public float airMovementMultiplier;
+    public float gravity = 10;
+    [Tooltip("Used for downward velocity when jumping")]
+    public float gravityMultiplier = 1;
+    public bool grounded;
+    public LayerMask ground;
+    [Range(0,1),Tooltip("How fast the character slows down while grounded")]
+    public float counterMove = .175f;
+    public float airBreakForce = .175f;
+    float threshold = .01f;
+    public float maxSlopeAngle = 35f;
+    Vector2 mag;
+    public float stepSpeed = 0.2f;
+    private float stepTimer;
 
-   //Wall Running
-   [Header("Wall Running Variables")]
-   public Transform wallCheckLft;
-   public Transform wallCheckRt;
-   public float wallDistance;
-   public float wallRunningGavity;
-   public float wallRunSlipModifier;
-   public float wallRunPostGrappleSlipModifier;
-   public float wallJumpCoolDown;
-   public float wallJumpUpwardMultiplier;
-   public float wallJumpOutwardMultiplier;
-   public LayerMask wallMask;
-   public bool isWallRunningL;
-   public bool isWallRunningR;
-   public TrailRenderer lftTrail, rtTrail;
-   bool canWallJump = true;
-   private bool isWallRunning;
-   private GameObject previousWall;
-   RaycastHit lftHit;
-   RaycastHit rtHit;
-   private bool onWall;
-   private bool hasGrappled = false;
+#endregion
 
-   //Dash
-   [Header("Dash Variables")]
-   //bool rdyToDash = true;
-   public float dashCooldown;
-   public float dashSpeed;
-   Grapple grapple;
-   float timer;
+#region Jump Variables
 
-   //Particles
-   public ParticleSystem particle;
+    //jump
+    [Header("Jump Variables")]
+    bool rdyToJump = true;
+    float jumpCooldown = .25f;
+    public float jumpForce = 550f;
 
-   void Awake()
-   {
+#endregion
+
+#region Slide Variables
+
+    //Slide
+    [Header("Slide Variables")]
+    public float startSlideSpeedThreshold;
+    public float stopSlideSpeedThreshold;
+    [Range(0,1)]
+    public float slideDrag;
+    public float maxSlideSpeed;
+    public float slideHeight;
+    public float slideJumpMultiplier;
+    public float slidingGravity;
+    public float slidingStrafeClamp;
+
+    [SerializeField] private LayerMask stopSlide;
+    [SerializeField] Transform slideCheck;
+    public bool isSliding;
+
+    private CapsuleCollider PlayerCol;
+    private float startCounterMove, startHeight, startMaxSpeed;
+    Vector3 normalVector = Vector3.up;
+
+#endregion
+
+#region Wall Running Variables
+
+    //Wall Running
+    [Header("Wall Running Variables")]
+    public Transform wallCheckLft;
+    public Transform wallCheckRt;
+    public float wallDistance;
+    public float wallRunningGavity;
+    public float wallRunSlipModifier;
+    public float wallRunPostGrappleSlipModifier;
+    public float wallJumpCoolDown;
+    public float wallJumpUpwardMultiplier;
+    public float wallJumpOutwardMultiplier;
+    public LayerMask wallMask;
+    public bool isWallRunningL;
+    public bool isWallRunningR;
+    public TrailRenderer lftTrail, rtTrail;
+    bool canWallJump = true;
+    private bool isWallRunning;
+    private GameObject previousWall;
+    RaycastHit lftHit;
+    RaycastHit rtHit;
+    private bool onWall;
+    private bool hasGrappled = false;
+
+#endregion
+
+#region Future Vars
+
+    // Futrue movement abilities
+    //Dash
+    //[Header("Dash Variables")]
+    //bool rdyToDash = true;
+    //public float dashCooldown;
+    //public float dashSpeed;
+
+#endregion
+
+// Here we setup our variables 
+#region Setup
+    void Awake()
+    {
        rb = GetComponent<Rigidbody>();
-   }
+    }
 
-   void Start()
-   {
+    void Start()
+    {
        Cursor.lockState = CursorLockMode.Locked;
        Cursor.visible = false;
-
+       debugUI = true;
+       
        startCounterMove = counterMove;
        
        PlayerCol = GetComponent<CapsuleCollider>();
        grapple = gameObject.GetComponent<Grapple>();
-   }
+    }
+#endregion
 
-   private void FixedUpdate()
-   {
-       Movement();
-       if(!grounded) NotGrounded();
-   }
+// This is the heart of the script where all of our main functions are called
+#region Update Loops
 
-   private void Update()
-   {
-       Effects();
-       MyInput();
-       Look();
-   }
+    private void FixedUpdate()
+    {
+        if (GameManager.StartGame)
+        {
+            Movement();
+            if(!grounded) NotGrounded();   
+        }
+    }
 
-   private void Effects()
-   {
+    private void Update()
+    {
+        Effects();
+        MyInput();
+        Look();
+    }
+
+#endregion
+
+// In this region we have our functions called in Update
+#region Update Functions
+
+    // Effects controls the speed line effects that appear when you go fast
+    private void Effects()
+    {
        currentSpeed = rb.velocity.magnitude;
-       speed.text = "Speed: " + Mathf.Round(currentSpeed);
+       
        if (currentSpeed >= 21)
        {
            var em = particle.emission;
@@ -156,20 +207,23 @@ public class PlayerMovement : MonoBehaviour
            em.enabled = false;
            em.rateOverTime = 10;
        }
-   }
+    }
 
-   private void MyInput()
-   {
+    // In MyInput we are taking in play input and turning it into useful information as well as checking if we are wall running
+    private void MyInput()
+    {
        if (Input.GetKeyDown(KeyCode.Escape))
        {
            if(Cursor.lockState == CursorLockMode.None)
            {
+               debugUI = true;
                Cursor.lockState = CursorLockMode.Locked;
                counterMove = startCounterMove;
                Cursor.visible = false;
            }
            else
            {
+               debugUI = false;
                Cursor.lockState = CursorLockMode.None;
                grapple.GrappleDisconnect();
                Cursor.visible = true;
@@ -192,12 +246,6 @@ public class PlayerMovement : MonoBehaviour
        jumping = Input.GetButton("Jump");
        sliding = Input.GetKey(KeyCode.LeftShift);
 
-       //dash = Input.GetKey(KeyCode.LeftShift);
-       //add croutch here
-
-       //WallRunning
-       //isWallRunningL = Physics.BoxCast(wallCheckLft.position, new Vector3 (.25f,.55f,.05f), -transform.right, out RaycastHit lftHit, Quaternion.identity, wallDistance, wallMask);
-       //isWallRunningR = Physics.BoxCast(wallCheckRt.position, new Vector3 (.25f,.55f,.05f), transform.right, out RaycastHit rtHit, Quaternion.identity, wallDistance, wallMask);
        isWallRunningR = Physics.CheckBox(wallCheckRt.position, new Vector3 (.25f,.55f,.05f), Quaternion.identity, wallMask);
        isWallRunningL = Physics.CheckBox(wallCheckLft.position, new Vector3 (.25f,.55f,.05f), Quaternion.identity, wallMask);
 
@@ -210,10 +258,35 @@ public class PlayerMovement : MonoBehaviour
            onWall = false;
            isWallRunning = false;
        }
-   }
+    }
+    
+    // Look controls the camera and making it look in the right direction
+    float desiredX;
+    private void Look()
+    {
+        if(Cursor.lockState == CursorLockMode.None) return;
+      
+        float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.fixedDeltaTime * sensMult;
+        float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.fixedDeltaTime * sensMult;
 
-   private void Movement()
-   {
+        Vector3 rot = playerCam.transform.localRotation.eulerAngles;
+        desiredX = rot.y + mouseX;
+
+        xRot -= mouseY;
+        xRot = Mathf.Clamp(xRot, -90f, 90f);
+
+        playerCam.transform.localRotation = Quaternion.Euler(xRot, desiredX, 0);
+        orientation.transform.localRotation = Quaternion.Euler(0, desiredX, 0);
+    }
+
+#endregion
+
+// This is all of our movement logic and movement related abilities
+#region Movement and Abilities
+
+    // Movement holds our main movement logic focusing on running and logic to swap to other movement styles
+    private void Movement()
+    {
        Gravity();
 
        mag = FindVelRelativeToLook();
@@ -223,11 +296,7 @@ public class PlayerMovement : MonoBehaviour
 
        if (rdyToJump && jumping && !isSliding) Jump();
 
-       //if(grounded) Invoke(nameof(ResetJump), jumpCooldown);
-
        float maxSpeed = this.maxGroundSpeed;
-
-       //sliding forces for slopes go here
 
        if (x > 0 && xMag > maxSpeed) x = 0;
        if (x < 0 && xMag < -maxSpeed) x = 0;
@@ -241,10 +310,8 @@ public class PlayerMovement : MonoBehaviour
            multiplier = airMovementMultiplier;
            float facingVelocity = (new Vector3(Mathf.Abs(transform.forward.normalized.x),0,Mathf.Abs(transform.forward.normalized.z))
                                    - new Vector3(Mathf.Abs(rb.velocity.normalized.x),0,Mathf.Abs(rb.velocity.normalized.z))).magnitude;
-           //multiplierV = y < 0 ? Mathf.Lerp(1, 0,facingVelocity * 2) : airMovementMultiplier;
            multiplierV = airMovementMultiplier;
            if(y < 0) rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * airBreakForce);
-           //Debug.Log($"Facing Vel: {facingVelocity} Multiplier: {multiplierV}");
        }
 
        //WallRunning
@@ -255,17 +322,6 @@ public class PlayerMovement : MonoBehaviour
        if (isWallRunning)
        {
            WallRunning();
-       }
-
-       //if (grapple.connect || grounded)
-       //    Invoke(nameof(ResetWallJump), 0f);
-
-       //Dash
-       //if (dash && rdyToDash) Dash();
-       timer -= Time.deltaTime;
-       if(timer <= 0)
-       {
-           //if (grounded || grapple.connect) rdyToDash = true;
        }
 
        //slide movement goes here
@@ -292,9 +348,11 @@ public class PlayerMovement : MonoBehaviour
        if(rb.velocity.magnitude <= .1f) rb.velocity = Vector3.zero;
        
        PlayRunAudio();
-   }
-   void Gravity()
-   {
+    }
+    
+    // We are using a mix of Unity gravity and custom gravity so we can have more control
+    void Gravity()
+    {
        if (!grounded && !isWallRunning && !jumping && rb.velocity.y <= 0)
        {
            rb.AddForce(Vector3.down * Time.deltaTime * gravity * gravityMultiplier);
@@ -303,10 +361,79 @@ public class PlayerMovement : MonoBehaviour
        {
            rb.AddForce(Vector3.down * Time.deltaTime * gravity);
        }
-   }
+    }
+    
+    // This is used to adda force to the player oppisite to the movement direction to slow down and stop the player
+    private void counterMovement(float x, float y, Vector2 mag)
+    {
+        if (!grounded || jumping || dash) return;
 
-   void StartSlide()
-   {
+        //sliding
+
+        if(Mathf.Abs(mag.x) > threshold && Mathf.Abs(x) < .05f || (mag.x < -threshold && x > 0)|| (mag.x > threshold&& x < 0))
+        {
+            rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * -mag.x * counterMove);
+        }
+        if (Mathf.Abs(mag.y) > threshold && Mathf.Abs(y) < .05f || (mag.y < -threshold && y > 0) || (mag.y > threshold && y < 0))
+        {
+            rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * counterMove);
+        }
+
+        if (Mathf.Sqrt(Mathf.Pow(rb.velocity.x, 2) + Mathf.Pow(rb.velocity.z, 2)) > maxGroundSpeed)
+        {
+            float fallSpeed = rb.velocity.y;
+            Vector3 n = rb.velocity.normalized * maxGroundSpeed;
+            rb.velocity = new Vector3(n.x, fallSpeed, n.z);
+        }
+    }
+
+    // This is used to find out if you are lookig in the direction you are moving
+    public Vector2 FindVelRelativeToLook()
+    {
+        float lookAngle = orientation.transform.eulerAngles.y;
+        float moveAngel = Mathf.Atan2(rb.velocity.x, rb.velocity.z) * Mathf.Rad2Deg;
+
+        float u = Mathf.DeltaAngle(lookAngle, moveAngel);
+        float v = 90 - u;
+
+        float magnitude = rb.velocity.magnitude;
+        float ymag = magnitude * Mathf.Cos(u * Mathf.Deg2Rad);
+        float xmag = magnitude * Mathf.Cos(v * Mathf.Deg2Rad);
+
+        return new Vector2(xmag, ymag);
+    }
+    
+    // This function is our jump logic and a seperate function to reset the jump so there is a small cooldown
+    private void Jump(float slideMultiplier = 1)
+    {
+        if(grounded && rdyToJump)
+        {
+            PlayerAudioManager.CallOnPlayJumpStartAudio();
+
+            rdyToJump = false;
+
+            rb.AddForce(Vector2.up * jumpForce * 3.5f * slideMultiplier);
+            rb.AddForce(normalVector * jumpForce * .5f * slideMultiplier);
+
+            Vector3 vel = rb.velocity;
+            if (rb.velocity.y < .5f)
+                rb.velocity = new Vector3(vel.x, 0, vel.z);
+            else if (rb.velocity.y > 0)
+                rb.velocity = new Vector3(vel.x, vel.y / 2, vel.z);
+
+            Invoke(nameof(ResetJump), jumpCooldown);
+        }
+    }
+
+    private void ResetJump()
+    {
+        rdyToJump = true;
+    }
+
+    // These three function govern our sliding logic
+    // I split it into three due to the inherent setup required for starting and stoping sliding
+    void StartSlide()
+    {
        startCounterMove = counterMove;
        startHeight = PlayerCol.height;
        startMaxSpeed = maxGroundSpeed;
@@ -317,10 +444,10 @@ public class PlayerMovement : MonoBehaviour
        PlayerCol.height = slideHeight;
        maxGroundSpeed = maxSlideSpeed;
        //PlayerAudioManager.CallOnPlaySlideStartAudio();
-   }
-  
-   void Slide()
-   {
+    }
+
+    void Slide()
+    {
        x = Mathf.Clamp(x, -slidingStrafeClamp, slidingStrafeClamp);
 
        if(Physics.CheckCapsule(slideCheck.position - (slideCheck.forward).normalized*.45f,
@@ -341,20 +468,21 @@ public class PlayerMovement : MonoBehaviour
            rb.AddForce(Vector3.down * slidingGravity);
        }
        //PlayerAudioManager.CallOnPlaySlideHoldAudio();
-   }
+    }
 
-   void StopSlide()
-   {
+    void StopSlide()
+    {
        counterMove = startCounterMove;
        PlayerCol.height = startHeight;
        maxGroundSpeed = startMaxSpeed;
       
        isSliding = false;
        //PlayerAudioManager.CallOnPlaySlideStopAudio();
-   }
+    }
 
-   void WallRunning()
-   {
+    // This holds wall running logic and we have three types of wall running that can be mixed and matched to change the feel of the game
+    void WallRunning()
+    {
        if (canWallJump && jumping && !grounded) wallJump();
       
        if(!jumping && !hasGrappled)
@@ -371,178 +499,102 @@ public class PlayerMovement : MonoBehaviour
       
        if (isWallRunningL)
        {
-           //lftHandObj.SetTargetPosition(lftHit.point);
            if(!grounded)
                rb.AddForce(-orientation.right * 5f, ForceMode.Force);
        }
 
        if (isWallRunningR)
        {
-           //rtHandObj.SetTargetPosition(rtHit.point);
            if (!grounded)
                rb.AddForce(orientation.right * 5f, ForceMode.Force);
        }
+    }
+    
+    // We have a different function for wall jump but it is very similar to normal jump
+    // just some extra force to push us awayt from the wall
+    private void wallJump()
+    {
+        canWallJump = false;
+        if (!grounded)
+        {
+            rb.velocity = rb.velocity.y <= 0? new Vector3(rb.velocity.x, 0, rb.velocity.z):rb.velocity;
+            rb.AddForce(Vector2.up * jumpForce * wallJumpUpwardMultiplier);
+            rb.AddForce(normalVector * jumpForce * .5f);
+            PlayerAudioManager.CallOnPlayJumpStartAudio();
+        }
 
-       //rb.AddForce(Vector3.up * gravityOffset, ForceMode.Force);
-   }
+        if (isWallRunningL)
+            rb.AddForce(orientation.right * jumpForce * wallJumpOutwardMultiplier);
+        if (isWallRunningR)
+            rb.AddForce(-orientation.right * jumpForce * wallJumpOutwardMultiplier);
 
-   void NotGrounded()
+        Invoke(nameof(ResetWallJump), wallJumpCoolDown);
+    }
+    private void ResetWallJump()
+    {
+        canWallJump = true;
+    }
+
+#endregion
+
+// This has some code I am testing for a dash movement ability
+#region Future Abilities
+
+/*
+private void Dash()
+{
+   if (rdyToDash && grapple.connect == false)
    {
-       if (grapple.connect) hasGrappled = true;
-   }
-  
-   private void Jump(float slideMultiplier = 1)
-   {
-       if(grounded && rdyToJump)
-       {
-           PlayerAudioManager.CallOnPlayJumpStartAudio();
-
-           rdyToJump = false;
-
-           rb.AddForce(Vector2.up * jumpForce * 3.5f * slideMultiplier);
-           rb.AddForce(normalVector * jumpForce * .5f * slideMultiplier);
-
-           Vector3 vel = rb.velocity;
-           if (rb.velocity.y < .5f)
-               rb.velocity = new Vector3(vel.x, 0, vel.z);
-           else if (rb.velocity.y > 0)
-               rb.velocity = new Vector3(vel.x, vel.y / 2, vel.z);
-
-           Invoke(nameof(ResetJump), jumpCooldown);
-       }
-   }
-
-   private void ResetJump()
-   {
-       rdyToJump = true;
-   }
-   private void ResetWallJump()
-   {
-       canWallJump = true;
-   }
-
-   private void wallJump()
-   {
-       canWallJump = false;
-       if (!grounded)
-       {
-           rb.velocity = rb.velocity.y <= 0? new Vector3(rb.velocity.x, 0, rb.velocity.z):rb.velocity;
-           rb.AddForce(Vector2.up * jumpForce * wallJumpUpwardMultiplier);
-           rb.AddForce(normalVector * jumpForce * .5f);
-           PlayerAudioManager.CallOnPlayJumpStartAudio();
-       }
-
-       if (isWallRunningL)
-           rb.AddForce(orientation.right * jumpForce * wallJumpOutwardMultiplier);
-       if (isWallRunningR)
-           rb.AddForce(-orientation.right * jumpForce * wallJumpOutwardMultiplier);
-
-       Invoke(nameof(ResetWallJump), wallJumpCoolDown);
-   }
-
-   /*
-   private void Dash()
-   {
-       if (rdyToDash && grapple.connect == false)
-       {
-           Debug.Log("Dash");
-           rdyToDash = false;
-           rb.AddForce(orientation.transform.forward * y * dashSpeed, ForceMode.VelocityChange);
-           rb.AddForce(orientation.transform.right * x * dashSpeed, ForceMode.VelocityChange);
-           timer = dashCooldown;
-           var col = particle.trails.colorOverLifetime;
-           col = Color.red;
-           Invoke(nameof(ResetDash), 0);
-       }
-   }
-
-   private void ResetDash()
-   {
-       if (Mathf.Abs(mag.x) > threshold + 10 && Mathf.Abs(x) < .05f || (mag.x < -threshold - 10 && x > 0) || (mag.x > threshold + 10 && x < 0))
-       {
-           rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * -mag.x * counterMove);
-       }
-       if (Mathf.Abs(mag.y) > threshold + 10 && Mathf.Abs(y) < .05f || (mag.y < -threshold - 10 && y > 0) || (mag.y > threshold + 10 && y < 0))
-       {
-           rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * counterMove);
-       }
-
-       if (Mathf.Sqrt(Mathf.Pow(rb.velocity.x, 2) + Mathf.Pow(rb.velocity.z, 2)) > maxSpeed)
-       {
-           float fallSpeed = rb.velocity.y;
-           Vector3 n = rb.velocity.normalized * (15 + maxSpeed);
-           rb.velocity = new Vector3(n.x, fallSpeed, n.z);
-       }
+       Debug.Log("Dash");
+       rdyToDash = false;
+       rb.AddForce(orientation.transform.forward * y * dashSpeed, ForceMode.VelocityChange);
+       rb.AddForce(orientation.transform.right * x * dashSpeed, ForceMode.VelocityChange);
+       timer = dashCooldown;
        var col = particle.trails.colorOverLifetime;
-       col = Color.white;
+       col = Color.red;
+       Invoke(nameof(ResetDash), 0);
    }
-   */
-   float desiredX;
-   private void Look()
+}
+
+private void ResetDash()
+{
+   if (Mathf.Abs(mag.x) > threshold + 10 && Mathf.Abs(x) < .05f || (mag.x < -threshold - 10 && x > 0) || (mag.x > threshold + 10 && x < 0))
    {
-       if(Cursor.lockState == CursorLockMode.None) return;
-      
-       float mouseX = Input.GetAxis("Mouse X") * sensitivity * Time.fixedDeltaTime * sensMult;
-       float mouseY = Input.GetAxis("Mouse Y") * sensitivity * Time.fixedDeltaTime * sensMult;
-
-       Vector3 rot = playerCam.transform.localRotation.eulerAngles;
-       desiredX = rot.y + mouseX;
-
-       xRot -= mouseY;
-       xRot = Mathf.Clamp(xRot, -90f, 90f);
-
-       playerCam.transform.localRotation = Quaternion.Euler(xRot, desiredX, 0);
-       orientation.transform.localRotation = Quaternion.Euler(0, desiredX, 0);
+       rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * -mag.x * counterMove);
+   }
+   if (Mathf.Abs(mag.y) > threshold + 10 && Mathf.Abs(y) < .05f || (mag.y < -threshold - 10 && y > 0) || (mag.y > threshold + 10 && y < 0))
+   {
+       rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * counterMove);
    }
 
-   private void counterMovement(float x, float y, Vector2 mag)
+   if (Mathf.Sqrt(Mathf.Pow(rb.velocity.x, 2) + Mathf.Pow(rb.velocity.z, 2)) > maxSpeed)
    {
-       if (!grounded || jumping || dash) return;
-
-       //sliding
-
-       if(Mathf.Abs(mag.x) > threshold && Mathf.Abs(x) < .05f || (mag.x < -threshold && x > 0)|| (mag.x > threshold&& x < 0))
-       {
-           rb.AddForce(moveSpeed * orientation.transform.right * Time.deltaTime * -mag.x * counterMove);
-       }
-       if (Mathf.Abs(mag.y) > threshold && Mathf.Abs(y) < .05f || (mag.y < -threshold && y > 0) || (mag.y > threshold && y < 0))
-       {
-           rb.AddForce(moveSpeed * orientation.transform.forward * Time.deltaTime * -mag.y * counterMove);
-       }
-
-       if (Mathf.Sqrt(Mathf.Pow(rb.velocity.x, 2) + Mathf.Pow(rb.velocity.z, 2)) > maxGroundSpeed)
-       {
-           float fallSpeed = rb.velocity.y;
-           Vector3 n = rb.velocity.normalized * maxGroundSpeed;
-           rb.velocity = new Vector3(n.x, fallSpeed, n.z);
-       }
+       float fallSpeed = rb.velocity.y;
+       Vector3 n = rb.velocity.normalized * (15 + maxSpeed);
+       rb.velocity = new Vector3(n.x, fallSpeed, n.z);
    }
+   var col = particle.trails.colorOverLifetime;
+   col = Color.white;
+}
+*/
 
-   public Vector2 FindVelRelativeToLook()
-   {
-       float lookAngle = orientation.transform.eulerAngles.y;
-       float moveAngel = Mathf.Atan2(rb.velocity.x, rb.velocity.z) * Mathf.Rad2Deg;
+#endregion
 
-       float u = Mathf.DeltaAngle(lookAngle, moveAngel);
-       float v = 90 - u;
+// Here is all of our more utility functions for checking grounded
+#region Utility Functions
 
-       float magnitude = rb.velocity.magnitude;
-       float ymag = magnitude * Mathf.Cos(u * Mathf.Deg2Rad);
-       float xmag = magnitude * Mathf.Cos(v * Mathf.Deg2Rad);
-
-       return new Vector2(xmag, ymag);
-   }
-
-   bool IsFloor(Vector3 v)
-   {
+    // Check if the slope is low enough to be the floor
+    bool IsFloor(Vector3 v)
+    {
        float angle = Vector3.Angle(Vector3.up, v);
        return angle < maxSlopeAngle;
-   }
+    }
 
-   bool cancellingGrounded;
+    bool cancellingGrounded;
 
-   private void OnCollisionStay(Collision other)
-   {
+    // We are using collision to find the ground
+    private void OnCollisionStay(Collision other)
+    {
        int layer = other.gameObject.layer;
 
        if (ground != (ground | (1 << layer))) return;
@@ -550,7 +602,6 @@ public class PlayerMovement : MonoBehaviour
        for(int i = 0; i < other.contactCount; i++)
        {
            Vector3 normal = other.contacts[i].normal;
-           
            if (isWallRunning && !onWall)
            {
                previousWall = other.transform.gameObject;
@@ -570,21 +621,26 @@ public class PlayerMovement : MonoBehaviour
            }
        }
 
-       float delay = 3f;
+       float delay = 10f;
        if (!cancellingGrounded)
        {
            cancellingGrounded = true;
            Invoke(nameof(StopGrounded), Time.deltaTime * delay);
        }
-   }
+    }
 
-   private void StopGrounded()
-   {
+    private void StopGrounded()
+    {
        grounded = false;
-   }
-
-   private void PlayRunAudio()
-   {
+    }
+    
+    void NotGrounded()
+    {
+        if (grapple.connect) hasGrappled = true;
+    }
+    
+    private void PlayRunAudio()
+    {
        //Play audio
        currentSpeed = rb.velocity.magnitude;
        if (grounded || isWallRunning)
@@ -605,20 +661,31 @@ public class PlayerMovement : MonoBehaviour
                }  
            }
        }
-   }
+    }
 
-   private void OnDrawGizmos()
-   {
+#endregion
+
+#region Gizmos and Debug Editor
+
+    // Gizmos are used in the editor to check stuff like the wall run area and slide clipping checks
+    private void OnDrawGizmos()
+    {
        Gizmos.DrawWireCube(wallCheckLft.position, new Vector3(.25f, .55f, .05f));
        Gizmos.DrawWireCube(wallCheckRt.position, new Vector3(.25f, .55f, .05f));
-   }
-
-   int toolbarInt = 0;
-   string[] toolbarStrings = {"Movement", "WallRunning", "Grapple", "Slide", "Camera"};
-   private void OnGUI()
-   {
+    }
+    private void OnDrawGizmosSelected()
+    {
+        Gizmos.DrawSphere(slideCheck.position - (slideCheck.forward).normalized*.45f,.25f);
+        Gizmos.DrawSphere(slideCheck.position + (slideCheck.forward).normalized*.45f,.25f);
+    }
+    
+    // This is a debug UI where you can chage every value in this controller and in the grapple controller
+    int toolbarInt = 0;
+    string[] toolbarStrings = {"Movement", "WallRunning", "Grapple", "Slide", "Camera"};
+    private void OnGUI()
+    {
       
-       if (Cursor.lockState != CursorLockMode.None)
+       if (debugUI)
        {
            GUILayout.Label("Escape to Open Menu");
            return;
@@ -684,7 +751,7 @@ public class PlayerMovement : MonoBehaviour
                GUILayout.Label("Fall Gravity Multiplier");
                float.TryParse(GUILayout.TextField(gravityMultiplier.ToString()), out gravityMultiplier);
                GUILayout.EndHorizontal();
- 
+
                break;
            case 1:
         
@@ -729,6 +796,11 @@ public class PlayerMovement : MonoBehaviour
                GUILayout.BeginHorizontal();
                GUILayout.Label("Max Grapple Length");
                float.TryParse(GUILayout.TextField(grapple.distance.ToString()), out grapple.distance);
+               GUILayout.EndHorizontal();
+               
+               GUILayout.BeginHorizontal();
+               GUILayout.Label("Grapple Pull Speed");
+               float.TryParse(GUILayout.TextField(grapple.pullSpeed.ToString()), out grapple.pullSpeed);
                GUILayout.EndHorizontal();
           
                GUILayout.BeginHorizontal();
@@ -826,12 +898,8 @@ public class PlayerMovement : MonoBehaviour
                break;
        }
        GUILayout.EndVertical();
-   }
+    }
 
-   private void OnDrawGizmosSelected()
-   {
-       Gizmos.DrawSphere(slideCheck.position - (slideCheck.forward).normalized*.45f,.25f);
-       Gizmos.DrawSphere(slideCheck.position + (slideCheck.forward).normalized*.45f,.25f);
-   }
+#endregion
 }
 
